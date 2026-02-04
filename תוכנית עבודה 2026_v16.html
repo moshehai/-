@@ -153,6 +153,7 @@
         /* --- סעיפים: הסתרה בדו"ח סופי / PDF --- */
         .final-hidden { opacity: 0.35; filter: grayscale(0.6); }
         .final-hidden .final-hide-indicator { display: inline-flex !important; }
+        body[data-locked-export] .rec-hide-final-btn { display: none !important; }
 
 
     
@@ -2538,6 +2539,9 @@ function exportFullHTML(filename) {
             ensureRecommendationTools();
 
             const clone = document.documentElement.cloneNode(true);
+            if (clone.body) {
+                clone.body.removeAttribute('data-locked-export');
+            }
 
             // Remove runtime-generated UI elements that rely on JS event listeners.
             try {
@@ -3320,6 +3324,9 @@ function saveEditableHTML() {
             document.querySelectorAll('textarea').forEach(t => { t.textContent = t.value; });
 
             const clone = document.documentElement.cloneNode(true);
+            if (clone.body) {
+                clone.body.removeAttribute('data-locked-export');
+            }
 
             // Remove runtime-generated UI elements that rely on JS event listeners (listeners are not serialized in saved HTML).
             // They will be recreated and rebound on load by the initialization logic.
