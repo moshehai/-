@@ -1651,6 +1651,7 @@
 </footer>
 <!-- Scripts -->
 <script id="main-script">
+        window.__lockedExport = !!(document.body && document.body.hasAttribute('data-locked-export'));
         const scoreRules = {
             "נתב אבטחה": 2,
             "Image מבוצר כופר + Files": 2,
@@ -3044,6 +3045,10 @@ function downloadFile(filename, content) {
             return i >= 0 ? txt.slice(i + 'המלצה:'.length).trim() : txt;
         }
 
+        function isLockedExport() {
+            return !!(window.__lockedExport || (document.body && document.body.hasAttribute('data-locked-export')));
+        }
+
         function updateFinalHideButton(btn, card) {
             if (!btn || !card) return;
             const isHidden = card.classList.contains('final-hidden');
@@ -3062,6 +3067,10 @@ function downloadFile(filename, content) {
         }
 
         function ensureRecommendationTools() {
+            if (isLockedExport()) {
+                document.querySelectorAll('.rec-hide-final-btn').forEach(btn => btn.remove());
+                return;
+            }
             const cards = document.querySelectorAll('#recommendations-it .recommendation-card, #recommendations-cyber .recommendation-card');
             let seq = 1;
 
@@ -3118,24 +3127,18 @@ function downloadFile(filename, content) {
                 }
             
                 // Final hide button (for PDF/final version)
-                const isLockedExport = !!(document.body && document.body.hasAttribute('data-locked-export'));
-                if (isLockedExport) {
-                    const existing = card.querySelector('.rec-hide-final-btn');
-                    if (existing) existing.remove();
-                } else {
-                    if (!card.querySelector('.rec-hide-final-btn')) {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
-                        btn.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleFinalHidden(btn);
-                        });
-                        card.appendChild(btn);
-                    }
-                    updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
+                if (!card.querySelector('.rec-hide-final-btn')) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFinalHidden(btn);
+                    });
+                    card.appendChild(btn);
                 }
+                updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
 
 
                 // Move up / down (manual ordering)
