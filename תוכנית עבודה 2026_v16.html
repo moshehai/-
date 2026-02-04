@@ -3114,18 +3114,24 @@ function downloadFile(filename, content) {
                 }
             
                 // Final hide button (for PDF/final version)
-                if (!card.querySelector('.rec-hide-final-btn')) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFinalHidden(btn);
-                    });
-                    card.appendChild(btn);
+                const isLockedExport = !!(document.body && document.body.hasAttribute('data-locked-export'));
+                if (isLockedExport) {
+                    const existing = card.querySelector('.rec-hide-final-btn');
+                    if (existing) existing.remove();
+                } else {
+                    if (!card.querySelector('.rec-hide-final-btn')) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleFinalHidden(btn);
+                        });
+                        card.appendChild(btn);
+                    }
+                    updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
                 }
-                updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
 
 
                 // Move up / down (manual ordering)
@@ -3354,6 +3360,9 @@ function saveEditableHTML() {
             });
 
             const clone = document.documentElement.cloneNode(true);
+            if (clone.body) {
+                clone.body.setAttribute('data-locked-export', '1');
+            }
             clone.querySelectorAll('.no-print, button:not(.final-save-btn)').forEach(el => el.remove());
             clone.querySelectorAll('.final-hidden').forEach(el => el.remove());
 
