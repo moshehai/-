@@ -135,6 +135,7 @@
             input.clean-input, select.clean-select { border: none; background: transparent; padding: 0; appearance: none; -webkit-appearance: none; }
             select { text-indent: 1px; text-overflow: ''; }
             .recommendation-card { break-inside: avoid; border: 1px solid #e5e7eb; border-left-width: 4px !important; }
+            .final-hidden { display: none !important; }
             /* Force background colors print */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .score-container { border: 1px solid #ccc; } /* Add border for print visibility */
@@ -148,6 +149,10 @@
         /* --- מצב עריכה: הסתרת כפתורי עריכה כברירת מחדל --- */
         .edit-only { display: none !important; }
         .items-edit-mode .edit-only { display: revert !important; }
+
+        /* --- סעיפים: הסתרה בדו"ח סופי / PDF --- */
+        .final-hidden { opacity: 0.35; filter: grayscale(0.6); }
+        .final-hidden .final-hide-indicator { display: inline-flex !important; }
 
 
     
@@ -3035,6 +3040,23 @@ function downloadFile(filename, content) {
             return i >= 0 ? txt.slice(i + 'המלצה:'.length).trim() : txt;
         }
 
+        function updateFinalHideButton(btn, card) {
+            if (!btn || !card) return;
+            const isHidden = card.classList.contains('final-hidden');
+            btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+            btn.title = isHidden ? 'הצג בדו"ח סופי וב-PDF' : 'הסתר בדו"ח סופי וב-PDF';
+            btn.innerHTML = isHidden
+                ? '<i class="fas fa-eye ml-1"></i><span class="text-[10px]">הצג</span><span class="final-hide-indicator hidden text-[10px] bg-red-100 text-red-700 px-1 rounded mr-1">מוסתר</span>'
+                : '<i class="fas fa-eye-slash ml-1"></i><span class="text-[10px]">הסתר</span><span class="final-hide-indicator hidden text-[10px] bg-red-100 text-red-700 px-1 rounded mr-1">מוסתר</span>';
+        }
+
+        function toggleFinalHidden(btn) {
+            const card = btn ? btn.closest('.recommendation-card') : null;
+            if (!card) return;
+            card.classList.toggle('final-hidden');
+            updateFinalHideButton(btn, card);
+        }
+
         function ensureRecommendationTools() {
             const cards = document.querySelectorAll('#recommendations-it .recommendation-card, #recommendations-cyber .recommendation-card');
             let seq = 1;
@@ -3091,6 +3113,21 @@ function downloadFile(filename, content) {
                     card.appendChild(btn);
                 }
             
+                // Final hide button (for PDF/final version)
+                if (!card.querySelector('.rec-hide-final-btn')) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'rec-hide-final-btn no-print absolute top-2 text-gray-400 hover:text-gray-700 transition';
+                    btn.style.left = '7.4rem';
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFinalHidden(btn);
+                    });
+                    card.appendChild(btn);
+                }
+                updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
+
 
                 // Move up / down (manual ordering)
                 if (!card.querySelector('.rec-move-up-btn')) {
@@ -3319,6 +3356,7 @@ function saveEditableHTML() {
 
             const clone = document.documentElement.cloneNode(true);
             clone.querySelectorAll('.no-print, button:not(.final-save-btn)').forEach(el => el.remove());
+            clone.querySelectorAll('.final-hidden').forEach(el => el.remove());
 
             // 1. Lock existing-ok column specifically
             clone.querySelectorAll('.score-check').forEach(cb => {
