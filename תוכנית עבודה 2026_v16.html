@@ -153,6 +153,7 @@
         /* --- סעיפים: הסתרה בדו"ח סופי / PDF --- */
         .final-hidden { opacity: 0.35; filter: grayscale(0.6); }
         .final-hidden .final-hide-indicator { display: inline-flex !important; }
+        html[data-locked-export] .rec-hide-final-btn,
         body[data-locked-export] .rec-hide-final-btn { display: none !important; }
 
 
@@ -1651,7 +1652,7 @@
 </footer>
 <!-- Scripts -->
 <script id="main-script">
-        window.__lockedExport = !!(document.body && document.body.hasAttribute('data-locked-export'));
+        window.__lockedExport = !!((document.body && document.body.hasAttribute('data-locked-export')) || document.documentElement.hasAttribute('data-locked-export'));
         const scoreRules = {
             "נתב אבטחה": 2,
             "Image מבוצר כופר + Files": 2,
@@ -2543,6 +2544,7 @@ function exportFullHTML(filename) {
             if (clone.body) {
                 clone.body.removeAttribute('data-locked-export');
             }
+            clone.removeAttribute('data-locked-export');
 
             // Remove runtime-generated UI elements that rely on JS event listeners.
             try {
@@ -2563,7 +2565,9 @@ function exportFullHTML(filename) {
             // Persist deleted score counter into the exported script
             const script = clone.querySelector('#main-script');
             if (script) {
-                script.innerHTML = script.innerHTML.replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                script.innerHTML = script.innerHTML
+                    .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
             }
 
             downloadFile(filename, "<!DOCTYPE html>" + clone.outerHTML);
@@ -3046,7 +3050,7 @@ function downloadFile(filename, content) {
         }
 
         function isLockedExport() {
-            return !!(window.__lockedExport || (document.body && document.body.hasAttribute('data-locked-export')));
+            return !!(window.__lockedExport || (document.body && document.body.hasAttribute('data-locked-export')) || document.documentElement.hasAttribute('data-locked-export'));
         }
 
         function updateFinalHideButton(btn, card) {
@@ -3330,6 +3334,7 @@ function saveEditableHTML() {
             if (clone.body) {
                 clone.body.removeAttribute('data-locked-export');
             }
+            clone.removeAttribute('data-locked-export');
 
             // Remove runtime-generated UI elements that rely on JS event listeners (listeners are not serialized in saved HTML).
             // They will be recreated and rebound on load by the initialization logic.
@@ -3350,7 +3355,9 @@ function saveEditableHTML() {
             // Persist deleted score counter into the exported script
             const script = clone.querySelector('#main-script');
             if (script) {
-                script.innerHTML = script.innerHTML.replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                script.innerHTML = script.innerHTML
+                    .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
             }
 
             downloadFile('תוכנית עבודה עריכה.html', "<!DOCTYPE html>" + clone.outerHTML);
@@ -3370,6 +3377,7 @@ function saveEditableHTML() {
             });
 
             const clone = document.documentElement.cloneNode(true);
+            clone.setAttribute('data-locked-export', '1');
             if (clone.body) {
                 clone.body.setAttribute('data-locked-export', '1');
             }
@@ -3445,7 +3453,9 @@ function saveEditableHTML() {
 
             // Update Script for Persisted values
             const script = clone.querySelector('#main-script');
-            script.innerHTML = script.innerHTML.replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+            script.innerHTML = script.innerHTML
+                .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = true;')
+                .replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
 
             // Inject "Save Changes" button for the final file
             const container = document.createElement('div');
