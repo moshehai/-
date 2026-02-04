@@ -128,13 +128,14 @@
         }
 
         @media print {
+            @page { size: 210mm 2000mm; margin: 10mm; }
             .no-print { display: none !important; }
             #floating-rvm-logo{ display:none !important; }
             body { background-color: white; }
             .shadow-lg, .shadow-md { box-shadow: none !important; }
             input.clean-input, select.clean-select { border: none; background: transparent; padding: 0; appearance: none; -webkit-appearance: none; }
             select { text-indent: 1px; text-overflow: ''; }
-            .recommendation-card { break-inside: avoid; border: 1px solid #e5e7eb; border-left-width: 4px !important; }
+            .recommendation-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e5e7eb; border-left-width: 4px !important; }
             .final-hidden { display: none !important; }
             /* Force background colors print */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -1072,7 +1073,6 @@
 (כלול בשירות CISO)</p><p class="text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block"><span class="font-semibold">ערך עסקי:</span> הפחתת סיכון לקנסות ותביעות, מוכנות לביקורות ודרישות לקוח ושמירה על אמון ומוניטין.</p>
 <span class="rec-points-badge absolute top-10 left-2 text-[10px] bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200 no-print edit-only">ניקוד: 4</span></div></div>
 </section>
-<div style="page-break-before: always;"></div>
 <!-- 5. Security Matrix -->
 <section class="max-w-7xl mx-auto my-10 px-2 md:px-6" id="security-matrix">
 <h3 class="text-2xl font-bold mb-4 text-blue-800 border-r-4 border-blue-600 pr-3">5. ביצור והקשחת התשתית</h3><div class="table-container bg-white shadow-md rounded-lg overflow-hidden border border-gray-300">
