@@ -3117,8 +3117,7 @@ function downloadFile(filename, content) {
                 if (!card.querySelector('.rec-hide-final-btn')) {
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'rec-hide-final-btn no-print absolute top-2 text-gray-400 hover:text-gray-700 transition';
-                    btn.style.left = '7.4rem';
+                    btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
                     btn.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
