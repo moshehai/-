@@ -2548,7 +2548,7 @@ function exportFullHTML(filename) {
 
             // Remove runtime-generated UI elements that rely on JS event listeners.
             try {
-                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
+                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .rec-hide-final-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
                      .forEach(el => el.remove());
             } catch (e) {}
 
@@ -3339,7 +3339,7 @@ function saveEditableHTML() {
             // Remove runtime-generated UI elements that rely on JS event listeners (listeners are not serialized in saved HTML).
             // They will be recreated and rebound on load by the initialization logic.
             try {
-                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
+                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .rec-hide-final-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
                      .forEach(el => el.remove());
             } catch (e) {}
 
