@@ -1471,6 +1471,9 @@
 </div>
 <!-- Score Bar section -->
 <div class="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+<div class="no-print mb-3 edit-only">
+<button class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1 rounded" onclick="editManualScores()" type="button">ערוך ציוני הגנה ידנית</button>
+</div>
 <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
 <h4 class="font-bold text-blue-800 mb-2">מה משמעות ציון ההגנה?</h4>
 <div class="text-sm text-gray-700 grid grid-cols-2 gap-2">
@@ -1734,6 +1737,8 @@
         };
 
         let deletedCardsScore = 0;
+        let manualCurrentScore = null;
+        let manualAfterScore = null;
 
         // --- Points override (per סעיף) ---
         function getPointsForElement(el, defaultPoints) {
@@ -2583,12 +2588,36 @@ function exportFullHTML(filename) {
             if (script) {
                 script.innerHTML = script.innerHTML
                     .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
-                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                    .replace(/let\s+manualCurrentScore\s*=\s*(null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                    .replace(/let\s+manualAfterScore\s*=\s*(null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
             }
 
             downloadFile(filename, "<!DOCTYPE html>" + clone.outerHTML);
         }
 
+
+        function editManualScores() {
+            const currentDefault = Number.isFinite(manualCurrentScore) ? String(manualCurrentScore) : '';
+            const afterDefault = Number.isFinite(manualAfterScore) ? String(manualAfterScore) : '';
+
+            const currentInput = prompt('ציון הגנה נוכחי (0-100). השאר ריק לחישוב אוטומטי:', currentDefault);
+            if (currentInput === null) return;
+            const afterInput = prompt('ציון הגנה לאחר ביצוע המלצות (0-100). השאר ריק לחישוב אוטומטי:', afterDefault);
+            if (afterInput === null) return;
+
+            const parseManualScore = (raw) => {
+                const t = (raw || '').trim();
+                if (!t) return null;
+                const n = Number(t);
+                if (!Number.isFinite(n)) return null;
+                return Math.max(0, Math.min(100, Math.round(n)));
+            };
+
+            manualCurrentScore = parseManualScore(currentInput);
+            manualAfterScore = parseManualScore(afterInput);
+            calculateScore();
+        }
 
         function calculateScore() {
             let currentScore = 30;
@@ -2675,6 +2704,8 @@ function exportFullHTML(filename) {
 
             const currentNormalized = Math.max(0, Math.min(100, normalize(currentScore, maxPossible)));
             const afterNormalized = Math.max(0, Math.min(100, normalize(afterScore, maxPossible)));
+            const currentFinal = Number.isFinite(manualCurrentScore) ? manualCurrentScore : currentNormalized;
+            const afterFinal = Number.isFinite(manualAfterScore) ? manualAfterScore : afterNormalized;
 
             const maxEl1 = document.getElementById('max-possible-text');
             if (maxEl1) maxEl1.textContent = String(maxPossible);
@@ -2703,8 +2734,8 @@ function exportFullHTML(filename) {
                 }
             }
 
-            applyBar('score-text', 'score-bar', currentNormalized);
-            applyBar('after-score-text', 'after-score-bar', afterNormalized);
+            applyBar('score-text', 'score-bar', currentFinal);
+            applyBar('after-score-text', 'after-score-bar', afterFinal);
         }
 
         function checkDate(input) {
@@ -3409,7 +3440,9 @@ function saveEditableHTML() {
             if (script) {
                 script.innerHTML = script.innerHTML
                     .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
-                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                    .replace(/let\s+manualCurrentScore\s*=\s*(null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                    .replace(/let\s+manualAfterScore\s*=\s*(null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
             }
 
             downloadFile('תוכנית עבודה עריכה.html', "<!DOCTYPE html>" + clone.outerHTML);
@@ -3507,7 +3540,9 @@ function saveEditableHTML() {
             const script = clone.querySelector('#main-script');
             script.innerHTML = script.innerHTML
                 .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = true;')
-                .replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                .replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                .replace(/let manualCurrentScore = (null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                .replace(/let manualAfterScore = (null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
 
             // Inject "Save Changes" button for the final file
             const container = document.createElement('div');
