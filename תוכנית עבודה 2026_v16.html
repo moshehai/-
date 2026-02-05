@@ -140,6 +140,22 @@
             /* Force background colors print */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .score-container { border: 1px solid #ccc; } /* Add border for print visibility */
+
+            /* Avoid clipping customer name in PDF print */
+            #client-name-input {
+                display: inline-block;
+                width: auto !important;
+                min-width: 18rem;
+                max-width: 90vw;
+                height: auto !important;
+                line-height: 1.45 !important;
+                padding: 2px 8px !important;
+                border-bottom: 1px solid #93c5fd !important;
+                white-space: nowrap;
+                overflow: visible;
+                font-weight: 700;
+                text-align: center;
+            }
         }
     
         /* --- סעיפים: כלי ניקוד ועריכה --- */
@@ -279,7 +295,7 @@
 <div class="max-w-5xl mx-auto text-center">
 <h1 class="text-3xl md:text-5xl font-bold mb-4">תוכנית עבודה לשנת 2026</h1>
 <div class="flex justify-center items-center gap-2 mb-2 text-xl md:text-2xl text-blue-200">
-<input class="bg-transparent border-b border-blue-400 text-center placeholder-blue-300 focus:outline-none focus:border-white w-64" placeholder="הכנס שם לקוח כאן" type="text" value=""/>
+<input class="bg-transparent border-b border-blue-400 text-center placeholder-blue-300 focus:outline-none focus:border-white w-64" id="client-name-input" placeholder="הכנס שם לקוח כאן" type="text" value=""/>
 </div>
 <p class="text-sm opacity-80" style="position: relative;">
                 הוכנה בתאריך: <input class="prep-date-input" data-export="1" id="prep-date" type="date" value="2025-12-29"/>
