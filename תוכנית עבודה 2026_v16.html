@@ -128,16 +128,34 @@
         }
 
         @media print {
+            @page { size: 210mm 2000mm; margin: 10mm; }
             .no-print { display: none !important; }
             #floating-rvm-logo{ display:none !important; }
             body { background-color: white; }
             .shadow-lg, .shadow-md { box-shadow: none !important; }
             input.clean-input, select.clean-select { border: none; background: transparent; padding: 0; appearance: none; -webkit-appearance: none; }
             select { text-indent: 1px; text-overflow: ''; }
-            .recommendation-card { break-inside: avoid; border: 1px solid #e5e7eb; border-left-width: 4px !important; }
+            .recommendation-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #e5e7eb; border-left-width: 4px !important; }
+            .final-hidden { display: none !important; }
             /* Force background colors print */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .score-container { border: 1px solid #ccc; } /* Add border for print visibility */
+
+            /* Avoid clipping customer name in PDF print */
+            #client-name-input {
+                display: inline-block;
+                width: auto !important;
+                min-width: 18rem;
+                max-width: 90vw;
+                height: auto !important;
+                line-height: 1.45 !important;
+                padding: 2px 8px !important;
+                border-bottom: 1px solid #93c5fd !important;
+                white-space: nowrap;
+                overflow: visible;
+                font-weight: 700;
+                text-align: center;
+            }
         }
     
         /* --- סעיפים: כלי ניקוד ועריכה --- */
@@ -148,6 +166,12 @@
         /* --- מצב עריכה: הסתרת כפתורי עריכה כברירת מחדל --- */
         .edit-only { display: none !important; }
         .items-edit-mode .edit-only { display: revert !important; }
+
+        /* --- סעיפים: הסתרה בדו"ח סופי / PDF --- */
+        .final-hidden { opacity: 0.35; filter: grayscale(0.6); }
+        .final-hidden .final-hide-indicator { display: inline-flex !important; }
+        html[data-locked-export] .rec-hide-final-btn,
+        body[data-locked-export] .rec-hide-final-btn { display: none !important; }
 
 
     
@@ -271,7 +295,7 @@
 <div class="max-w-5xl mx-auto text-center">
 <h1 class="text-3xl md:text-5xl font-bold mb-4">תוכנית עבודה לשנת 2026</h1>
 <div class="flex justify-center items-center gap-2 mb-2 text-xl md:text-2xl text-blue-200">
-<input class="bg-transparent border-b border-blue-400 text-center placeholder-blue-300 focus:outline-none focus:border-white w-64" placeholder="הכנס שם לקוח כאן" type="text" value=""/>
+<input class="bg-transparent border-b border-blue-400 text-center placeholder-blue-300 focus:outline-none focus:border-white w-64" id="client-name-input" placeholder="הכנס שם לקוח כאן" type="text" value=""/>
 </div>
 <p class="text-sm opacity-80" style="position: relative;">
                 הוכנה בתאריך: <input class="prep-date-input" data-export="1" id="prep-date" type="date" value="2025-12-29"/>
@@ -1065,7 +1089,6 @@
 (כלול בשירות CISO)</p><p class="text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block"><span class="font-semibold">ערך עסקי:</span> הפחתת סיכון לקנסות ותביעות, מוכנות לביקורות ודרישות לקוח ושמירה על אמון ומוניטין.</p>
 <span class="rec-points-badge absolute top-10 left-2 text-[10px] bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200 no-print edit-only">ניקוד: 4</span></div></div>
 </section>
-<div style="page-break-before: always;"></div>
 <!-- 5. Security Matrix -->
 <section class="max-w-7xl mx-auto my-10 px-2 md:px-6" id="security-matrix">
 <h3 class="text-2xl font-bold mb-4 text-blue-800 border-r-4 border-blue-600 pr-3">5. ביצור והקשחת התשתית</h3><div class="table-container bg-white shadow-md rounded-lg overflow-hidden border border-gray-300">
@@ -1448,6 +1471,9 @@
 </div>
 <!-- Score Bar section -->
 <div class="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+<div class="no-print mb-3 edit-only">
+<button class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-3 py-1 rounded" onclick="editManualScores()" type="button">ערוך ציוני הגנה ידנית</button>
+</div>
 <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
 <h4 class="font-bold text-blue-800 mb-2">מה משמעות ציון ההגנה?</h4>
 <div class="text-sm text-gray-700 grid grid-cols-2 gap-2">
@@ -1645,6 +1671,7 @@
 </footer>
 <!-- Scripts -->
 <script id="main-script">
+        window.__lockedExport = !!((document.body && document.body.hasAttribute('data-locked-export')) || document.documentElement.hasAttribute('data-locked-export'));
         const scoreRules = {
             "נתב אבטחה": 2,
             "Image מבוצר כופר + Files": 2,
@@ -1710,6 +1737,8 @@
         };
 
         let deletedCardsScore = 0;
+        let manualCurrentScore = null;
+        let manualAfterScore = null;
 
         // --- Points override (per סעיף) ---
         function getPointsForElement(el, defaultPoints) {
@@ -2533,10 +2562,14 @@ function exportFullHTML(filename) {
             ensureRecommendationTools();
 
             const clone = document.documentElement.cloneNode(true);
+            if (clone.body) {
+                clone.body.removeAttribute('data-locked-export');
+            }
+            clone.removeAttribute('data-locked-export');
 
             // Remove runtime-generated UI elements that rely on JS event listeners.
             try {
-                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
+                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .rec-hide-final-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
                      .forEach(el => el.remove());
             } catch (e) {}
 
@@ -2553,12 +2586,38 @@ function exportFullHTML(filename) {
             // Persist deleted score counter into the exported script
             const script = clone.querySelector('#main-script');
             if (script) {
-                script.innerHTML = script.innerHTML.replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                script.innerHTML = script.innerHTML
+                    .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                    .replace(/let\s+manualCurrentScore\s*=\s*(null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                    .replace(/let\s+manualAfterScore\s*=\s*(null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
             }
 
             downloadFile(filename, "<!DOCTYPE html>" + clone.outerHTML);
         }
 
+
+        function editManualScores() {
+            const currentDefault = Number.isFinite(manualCurrentScore) ? String(manualCurrentScore) : '';
+            const afterDefault = Number.isFinite(manualAfterScore) ? String(manualAfterScore) : '';
+
+            const currentInput = prompt('ציון הגנה נוכחי (0-100). השאר ריק לחישוב אוטומטי:', currentDefault);
+            if (currentInput === null) return;
+            const afterInput = prompt('ציון הגנה לאחר ביצוע המלצות (0-100). השאר ריק לחישוב אוטומטי:', afterDefault);
+            if (afterInput === null) return;
+
+            const parseManualScore = (raw) => {
+                const t = (raw || '').trim();
+                if (!t) return null;
+                const n = Number(t);
+                if (!Number.isFinite(n)) return null;
+                return Math.max(0, Math.min(100, Math.round(n)));
+            };
+
+            manualCurrentScore = parseManualScore(currentInput);
+            manualAfterScore = parseManualScore(afterInput);
+            calculateScore();
+        }
 
         function calculateScore() {
             let currentScore = 30;
@@ -2645,6 +2704,8 @@ function exportFullHTML(filename) {
 
             const currentNormalized = Math.max(0, Math.min(100, normalize(currentScore, maxPossible)));
             const afterNormalized = Math.max(0, Math.min(100, normalize(afterScore, maxPossible)));
+            const currentFinal = Number.isFinite(manualCurrentScore) ? manualCurrentScore : currentNormalized;
+            const afterFinal = Number.isFinite(manualAfterScore) ? manualAfterScore : afterNormalized;
 
             const maxEl1 = document.getElementById('max-possible-text');
             if (maxEl1) maxEl1.textContent = String(maxPossible);
@@ -2673,8 +2734,8 @@ function exportFullHTML(filename) {
                 }
             }
 
-            applyBar('score-text', 'score-bar', currentNormalized);
-            applyBar('after-score-text', 'after-score-bar', afterNormalized);
+            applyBar('score-text', 'score-bar', currentFinal);
+            applyBar('after-score-text', 'after-score-bar', afterFinal);
         }
 
         function checkDate(input) {
@@ -3018,7 +3079,8 @@ function downloadFile(filename, content) {
             const ps = Array.from(card.querySelectorAll('p'));
             const problemP = ps.find(p => (p.textContent || '').includes('הבעיה:')) || ps[0] || null;
             const recP = ps.find(p => (p.textContent || '').includes('המלצה:')) || ps[1] || null;
-            return { titleEl, badgeEl, problemP, recP };
+            const bizP = ps.find(p => (p.textContent || '').includes('ערך עסקי:')) || null;
+            return { titleEl, badgeEl, problemP, recP, bizP };
         }
 
         function getProblemText(problemP) {
@@ -3035,7 +3097,40 @@ function downloadFile(filename, content) {
             return i >= 0 ? txt.slice(i + 'המלצה:'.length).trim() : txt;
         }
 
+
+        function getBusinessValueText(bizP) {
+            if (!bizP) return '';
+            const txt = (bizP.textContent || '').trim();
+            const i = txt.indexOf('ערך עסקי:');
+            return i >= 0 ? txt.slice(i + 'ערך עסקי:'.length).trim() : txt;
+        }
+
+        function isLockedExport() {
+            return !!(window.__lockedExport || (document.body && document.body.hasAttribute('data-locked-export')) || document.documentElement.hasAttribute('data-locked-export'));
+        }
+
+        function updateFinalHideButton(btn, card) {
+            if (!btn || !card) return;
+            const isHidden = card.classList.contains('final-hidden');
+            btn.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+            btn.title = isHidden ? 'הצג בדו"ח סופי וב-PDF' : 'הסתר בדו"ח סופי וב-PDF';
+            btn.innerHTML = isHidden
+                ? '<i class="fas fa-eye ml-1"></i><span class="text-[10px]">הצג</span><span class="final-hide-indicator hidden text-[10px] bg-red-100 text-red-700 px-1 rounded mr-1">מוסתר</span>'
+                : '<i class="fas fa-eye-slash ml-1"></i><span class="text-[10px]">הסתר</span><span class="final-hide-indicator hidden text-[10px] bg-red-100 text-red-700 px-1 rounded mr-1">מוסתר</span>';
+        }
+
+        function toggleFinalHidden(btn) {
+            const card = btn ? btn.closest('.recommendation-card') : null;
+            if (!card) return;
+            card.classList.toggle('final-hidden');
+            updateFinalHideButton(btn, card);
+        }
+
         function ensureRecommendationTools() {
+            if (isLockedExport()) {
+                document.querySelectorAll('.rec-hide-final-btn').forEach(btn => btn.remove());
+                return;
+            }
             const cards = document.querySelectorAll('#recommendations-it .recommendation-card, #recommendations-cyber .recommendation-card');
             let seq = 1;
 
@@ -3080,7 +3175,7 @@ function downloadFile(filename, content) {
                 if (!card.querySelector('.rec-score-btn')) {
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'rec-score-btn no-print absolute top-2 left-16 text-gray-400 hover:text-indigo-600 transition edit-only';
+                    btn.className = 'rec-score-btn no-print absolute top-[4.5rem] left-2 text-gray-400 hover:text-indigo-600 transition edit-only';
                     btn.title = 'קבע ניקוד';
                     btn.innerHTML = '<i class="fas fa-star"></i>';
                     btn.addEventListener('click', (e) => {
@@ -3091,6 +3186,20 @@ function downloadFile(filename, content) {
                     card.appendChild(btn);
                 }
             
+                // Final hide button (for PDF/final version)
+                if (!card.querySelector('.rec-hide-final-btn')) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'rec-hide-final-btn no-print absolute left-2 top-10 text-gray-400 hover:text-gray-700 transition';
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFinalHidden(btn);
+                    });
+                    card.appendChild(btn);
+                }
+                updateFinalHideButton(card.querySelector('.rec-hide-final-btn'), card);
+
 
                 // Move up / down (manual ordering)
                 if (!card.querySelector('.rec-move-up-btn')) {
@@ -3146,6 +3255,7 @@ function downloadFile(filename, content) {
             const currentUrgency = normalizeUrgency(parts.badgeEl ? parts.badgeEl.textContent : 'דחיפות בינונית');
             const currentProblem = getProblemText(parts.problemP);
             const currentRec = getRecommendationText(parts.recP);
+            const currentBiz = getBusinessValueText(parts.bizP);
 
             const newTitle = prompt('כותרת המלצה:', currentTitle);
             if (newTitle === null) return;
@@ -3155,6 +3265,8 @@ function downloadFile(filename, content) {
             if (newProblem === null) return;
             const newRec = prompt('המלצה:', currentRec);
             if (newRec === null) return;
+            const newBiz = prompt('ערך עסקי (אופציונלי):', currentBiz);
+            if (newBiz === null) return;
 
             if (parts.titleEl) parts.titleEl.textContent = (newTitle || '').trim() || currentTitle;
 
@@ -3170,6 +3282,21 @@ function downloadFile(filename, content) {
                 // Keep the same icon style
                 parts.recP.innerHTML = `<i class="fas fa-lightbulb ml-1"></i> המלצה: ${(newRec || '').trim()}`;
                 parts.recP.className = 'text-sm font-semibold text-blue-700 mt-2';
+            }
+
+            const bizText = (newBiz || '').trim();
+            if (bizText) {
+                if (parts.bizP) {
+                    parts.bizP.innerHTML = `<span class="font-semibold">ערך עסקי:</span> ${bizText}`;
+                    parts.bizP.className = 'text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block';
+                } else if (parts.recP) {
+                    const p = document.createElement('p');
+                    p.className = 'text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block';
+                    p.innerHTML = `<span class="font-semibold">ערך עסקי:</span> ${bizText}`;
+                    parts.recP.insertAdjacentElement('afterend', p);
+                }
+            } else if (parts.bizP) {
+                parts.bizP.remove();
             }
 
             // Re-sort within its section based on urgency
@@ -3208,6 +3335,9 @@ function downloadFile(filename, content) {
             const rec = prompt('המלצה:');
             if (rec === null) return;
 
+            const bizValue = prompt('ערך עסקי (אופציונלי):');
+            if (bizValue === null) return;
+
             const sec = document.getElementById(sectionId);
             if (!sec) return;
             const grid = sec.querySelector('.grid') || sec;
@@ -3216,6 +3346,11 @@ function downloadFile(filename, content) {
             card.className = 'recommendation-card bg-white border-l-4 border-orange-500 shadow-sm p-4 rounded-r-lg mb-4 relative group hover:shadow-md transition';
 
             const normUrg = normalizeUrgency(urgency);
+
+            const bizText = (bizValue || '').trim();
+            const bizHtml = bizText
+                ? `<p class="text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block"><span class="font-semibold">ערך עסקי:</span> ${bizText}</p>`
+                : '';
 
             card.innerHTML = `
                 <button onclick="deleteCard(this)" class="no-print absolute top-2 left-2 text-gray-400 hover:text-red-500 transition" title="מחק המלצה" aria-label="מחק המלצה זו">
@@ -3227,6 +3362,7 @@ function downloadFile(filename, content) {
                 </div>
                 <p class="text-sm text-gray-600 mt-2"><span class="font-semibold">הבעיה:</span> ${problem.trim()}</p>
                 <p class="text-sm font-semibold text-blue-700 mt-2"><i class="fas fa-lightbulb ml-1"></i> המלצה: ${rec.trim()}</p>
+                ${bizHtml}
             `;
 
             applyUrgencyStyles(card, normUrg);
@@ -3278,11 +3414,15 @@ function saveEditableHTML() {
             document.querySelectorAll('textarea').forEach(t => { t.textContent = t.value; });
 
             const clone = document.documentElement.cloneNode(true);
+            if (clone.body) {
+                clone.body.removeAttribute('data-locked-export');
+            }
+            clone.removeAttribute('data-locked-export');
 
             // Remove runtime-generated UI elements that rely on JS event listeners (listeners are not serialized in saved HTML).
             // They will be recreated and rebound on load by the initialization logic.
             try {
-                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
+                clone.querySelectorAll('.score-tools, .btn-set-item-points, .btn-edit-item, .btn-add-under, .add-recommendation-btn, .rec-edit-btn, .rec-score-btn, .rec-hide-final-btn, .btn-delete-matrix-row, .rec-move-up-btn, .rec-move-down-btn')
                      .forEach(el => el.remove());
             } catch (e) {}
 
@@ -3298,7 +3438,11 @@ function saveEditableHTML() {
             // Persist deleted score counter into the exported script
             const script = clone.querySelector('#main-script');
             if (script) {
-                script.innerHTML = script.innerHTML.replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+                script.innerHTML = script.innerHTML
+                    .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = false;')
+                    .replace(/let\s+deletedCardsScore\s*=\s*\d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                    .replace(/let\s+manualCurrentScore\s*=\s*(null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                    .replace(/let\s+manualAfterScore\s*=\s*(null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
             }
 
             downloadFile('תוכנית עבודה עריכה.html', "<!DOCTYPE html>" + clone.outerHTML);
@@ -3318,7 +3462,12 @@ function saveEditableHTML() {
             });
 
             const clone = document.documentElement.cloneNode(true);
+            clone.setAttribute('data-locked-export', '1');
+            if (clone.body) {
+                clone.body.setAttribute('data-locked-export', '1');
+            }
             clone.querySelectorAll('.no-print, button:not(.final-save-btn)').forEach(el => el.remove());
+            clone.querySelectorAll('.final-hidden').forEach(el => el.remove());
 
             // 1. Lock existing-ok column specifically
             clone.querySelectorAll('.score-check').forEach(cb => {
@@ -3389,7 +3538,11 @@ function saveEditableHTML() {
 
             // Update Script for Persisted values
             const script = clone.querySelector('#main-script');
-            script.innerHTML = script.innerHTML.replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`);
+            script.innerHTML = script.innerHTML
+                .replace(/window\.__lockedExport\s*=\s*[^;]+;/, 'window.__lockedExport = true;')
+                .replace(/let deletedCardsScore = \d+;/, `let deletedCardsScore = ${deletedCardsScore};`)
+                .replace(/let manualCurrentScore = (null|\d+);/, `let manualCurrentScore = ${Number.isFinite(manualCurrentScore) ? manualCurrentScore : 'null'};`)
+                .replace(/let manualAfterScore = (null|\d+);/, `let manualAfterScore = ${Number.isFinite(manualAfterScore) ? manualAfterScore : 'null'};`);
 
             // Inject "Save Changes" button for the final file
             const container = document.createElement('div');
