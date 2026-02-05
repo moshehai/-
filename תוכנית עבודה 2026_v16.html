@@ -3032,7 +3032,8 @@ function downloadFile(filename, content) {
             const ps = Array.from(card.querySelectorAll('p'));
             const problemP = ps.find(p => (p.textContent || '').includes('הבעיה:')) || ps[0] || null;
             const recP = ps.find(p => (p.textContent || '').includes('המלצה:')) || ps[1] || null;
-            return { titleEl, badgeEl, problemP, recP };
+            const bizP = ps.find(p => (p.textContent || '').includes('ערך עסקי:')) || null;
+            return { titleEl, badgeEl, problemP, recP, bizP };
         }
 
         function getProblemText(problemP) {
@@ -3047,6 +3048,14 @@ function downloadFile(filename, content) {
             const txt = (recP.textContent || '').trim();
             const i = txt.indexOf('המלצה:');
             return i >= 0 ? txt.slice(i + 'המלצה:'.length).trim() : txt;
+        }
+
+
+        function getBusinessValueText(bizP) {
+            if (!bizP) return '';
+            const txt = (bizP.textContent || '').trim();
+            const i = txt.indexOf('ערך עסקי:');
+            return i >= 0 ? txt.slice(i + 'ערך עסקי:'.length).trim() : txt;
         }
 
         function isLockedExport() {
@@ -3119,7 +3128,7 @@ function downloadFile(filename, content) {
                 if (!card.querySelector('.rec-score-btn')) {
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'rec-score-btn no-print absolute top-14 left-2 text-gray-400 hover:text-indigo-600 transition edit-only';
+                    btn.className = 'rec-score-btn no-print absolute top-[4.5rem] left-2 text-gray-400 hover:text-indigo-600 transition edit-only';
                     btn.title = 'קבע ניקוד';
                     btn.innerHTML = '<i class="fas fa-star"></i>';
                     btn.addEventListener('click', (e) => {
@@ -3199,6 +3208,7 @@ function downloadFile(filename, content) {
             const currentUrgency = normalizeUrgency(parts.badgeEl ? parts.badgeEl.textContent : 'דחיפות בינונית');
             const currentProblem = getProblemText(parts.problemP);
             const currentRec = getRecommendationText(parts.recP);
+            const currentBiz = getBusinessValueText(parts.bizP);
 
             const newTitle = prompt('כותרת המלצה:', currentTitle);
             if (newTitle === null) return;
@@ -3208,6 +3218,8 @@ function downloadFile(filename, content) {
             if (newProblem === null) return;
             const newRec = prompt('המלצה:', currentRec);
             if (newRec === null) return;
+            const newBiz = prompt('ערך עסקי (אופציונלי):', currentBiz);
+            if (newBiz === null) return;
 
             if (parts.titleEl) parts.titleEl.textContent = (newTitle || '').trim() || currentTitle;
 
@@ -3223,6 +3235,21 @@ function downloadFile(filename, content) {
                 // Keep the same icon style
                 parts.recP.innerHTML = `<i class="fas fa-lightbulb ml-1"></i> המלצה: ${(newRec || '').trim()}`;
                 parts.recP.className = 'text-sm font-semibold text-blue-700 mt-2';
+            }
+
+            const bizText = (newBiz || '').trim();
+            if (bizText) {
+                if (parts.bizP) {
+                    parts.bizP.innerHTML = `<span class="font-semibold">ערך עסקי:</span> ${bizText}`;
+                    parts.bizP.className = 'text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block';
+                } else if (parts.recP) {
+                    const p = document.createElement('p');
+                    p.className = 'text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block';
+                    p.innerHTML = `<span class="font-semibold">ערך עסקי:</span> ${bizText}`;
+                    parts.recP.insertAdjacentElement('afterend', p);
+                }
+            } else if (parts.bizP) {
+                parts.bizP.remove();
             }
 
             // Re-sort within its section based on urgency
