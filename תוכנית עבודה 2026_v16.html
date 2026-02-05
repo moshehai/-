@@ -3119,7 +3119,7 @@ function downloadFile(filename, content) {
                 if (!card.querySelector('.rec-score-btn')) {
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'rec-score-btn no-print absolute top-2 left-16 text-gray-400 hover:text-indigo-600 transition edit-only';
+                    btn.className = 'rec-score-btn no-print absolute top-14 left-2 text-gray-400 hover:text-indigo-600 transition edit-only';
                     btn.title = 'קבע ניקוד';
                     btn.innerHTML = '<i class="fas fa-star"></i>';
                     btn.addEventListener('click', (e) => {
@@ -3261,6 +3261,9 @@ function downloadFile(filename, content) {
             const rec = prompt('המלצה:');
             if (rec === null) return;
 
+            const bizValue = prompt('ערך עסקי (אופציונלי):');
+            if (bizValue === null) return;
+
             const sec = document.getElementById(sectionId);
             if (!sec) return;
             const grid = sec.querySelector('.grid') || sec;
@@ -3269,6 +3272,11 @@ function downloadFile(filename, content) {
             card.className = 'recommendation-card bg-white border-l-4 border-orange-500 shadow-sm p-4 rounded-r-lg mb-4 relative group hover:shadow-md transition';
 
             const normUrg = normalizeUrgency(urgency);
+
+            const bizText = (bizValue || '').trim();
+            const bizHtml = bizText
+                ? `<p class="text-xs text-green-700 mt-1 bg-green-50 px-2 py-1 rounded inline-block"><span class="font-semibold">ערך עסקי:</span> ${bizText}</p>`
+                : '';
 
             card.innerHTML = `
                 <button onclick="deleteCard(this)" class="no-print absolute top-2 left-2 text-gray-400 hover:text-red-500 transition" title="מחק המלצה" aria-label="מחק המלצה זו">
@@ -3280,6 +3288,7 @@ function downloadFile(filename, content) {
                 </div>
                 <p class="text-sm text-gray-600 mt-2"><span class="font-semibold">הבעיה:</span> ${problem.trim()}</p>
                 <p class="text-sm font-semibold text-blue-700 mt-2"><i class="fas fa-lightbulb ml-1"></i> המלצה: ${rec.trim()}</p>
+                ${bizHtml}
             `;
 
             applyUrgencyStyles(card, normUrg);
